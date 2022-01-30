@@ -1,0 +1,614 @@
+---
+title: "Who does not like chocolate?"
+author: "Fib Gro"
+date: "1/21/2022"
+output: 
+  rmdformats::downcute:
+    toc_depth: 3
+    toc_float: 
+        collapsed: True
+    downcute_theme: "chaos"
+    highlight: tango
+
+---
+
+```{r setup, include=FALSE}
+# clear-up the environment
+rm(list = ls())
+
+# chunk options
+knitr::opts_chunk$set(
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center",
+  comment = "#>"
+)
+```
+
+
+## Introduction 
+
+### Overview of Chocolate
+
+```{r import photo}
+knitr::include_graphics("Choco.png")
+#source : [history](https://www.history.com/news/the-sweet-history-of-chocolate)
+```
+
+
+Chocolate is one of the most popular food products around the world. Not only does the chocolate has a deliciously sweet taste, but consuming dark chocolate may reduce the risk of some health condition. Dark chocolate is also believed to be linked to neurotransmitter systems such as serotonin, endorphins and dopamine, which increase our mood. If you want to get benefit from serotonin, the dark chocolate containing 85% cocoa has the highest serotonin level with approximately 2.9 micrograms per gram (Journal of Chromatography A, 2012). 
+
+The history of chocolate can be traced back to Mesoamerica, nowaday Mexico. Chocolate was used during rituals and also served as medicine. Centuries later, the Mayans utilized chocolate as a ritual drink, called "xocolatl". Mayan chocolate was produced from roasted cacao seeds mixed with water, cornmeal and chillies. In 1526, the explorer from Spain, Hernán Cortés, introduced cocoa seeds in Spain. Since then, chocolate reached its popularity in Europe especially for the rich and wealthy (History, 2020). The Industrial Revolution in 1828 has transformed the processing of chocolate. The cocoa powder is produced by pressing cocoa butter from roasted cocoa beans. The cocoa powder mixed with liquids is solidified into a chocolate bar. Present-day, chocolate is served in many forms, such as ice cream, cookies, milk etc. 
+
+
+### Dataset Information 
+
+The dataset is called Flavors of Cacao ratings, which were originally collected and compiled by Brady Brelinski, a Founding Member of the Manhattan Chocolate Society. In this project, the dataset is gathered from [the Kaggle website](https://www.kaggle.com/rtatman/chocolate-bar-ratings), where the data has been modified. The dataset is solely focused on dark chocolate in propose to appreciate the originality of the flavours of cocoa. The component of the dataset includes expert ratings of more than 1,700 chocolate bars between 2005 and 2016, region of origin, varieties of beans, and the percentage of cocoa. Classification of Flavors of Cacao Rating System is divided into five classes. The ratings themselves do not apply to chocolate health benefits or organic content. 
+
+- 5= Elite (Transcending beyond the ordinary limits)
+- 4= Premium (Superior flavour development, character and style)
+- 3= Satisfactory(3.0) to praiseworthy(3.75) (well made with special qualities)
+- 2= Disappointing (Passable but contains at least one significant flaw)
+- 1= Unpleasant (mostly unpalatable)
+
+
+### Project Expectation 
+
+This project is part of Learn by Building (LBB) assignment. The project will deliver and implement some knowledge related to the usage of Rmarkdown, exploratory data analysis by using R and publishing into the Rpubs. The goal of the project :
+
+- Discover where are cocoa beans with the highest average rating grown.
+- Discover which countries manufacture chocolate bars with the highest average rating.
+- Discover the relationship between a cocoa percentage in chocolate bars and its rating.
+
+
+## Data Observation  
+
+First, Import the dataset of `flavors_of_cacao.csv` from the working directory and assign it as an object called `Choco`. Then, print the first six rows by using `head()` function.
+
+```{r}
+Choco <- read.csv("flavors_of_cacao.csv")
+head(Choco)
+```
+
+
+Inspect the data by using `str()`. 
+
+- We found that there are 1,795 observations with 9 columns. 
+- The data description : 
+  - Company...Maker.if.known. is the name of the company manufacturing the chocolate bar.
+  - Specific.Bean.Origin.or.Bar.Name is the specific region of origin of the chocolate bar.
+  - REF is a review identification number.
+  - Review.Date is the publication date of the review.
+  - Cocoa.Percent is the percentage cocoa content in the chocolate bar.
+  - Company.Location is the location of the company.
+  - Rating is the expert rating as mentioned above.
+  - Bean.Type is the variety of beans used.
+  - Broad.Bean.Origin is the region of origin of the bean.
+  
+  
+```{r}
+str(Choco)
+```
+
+Observe Rating and Cocoa.Percent columns. 
+
+- The rating has a range between 1 and 5 with the median and mean being relatively close. 
+- The cocoa percentage ranges between 42 and 100 with the median and mean being around 70. 
+
+
+```{r}
+summary(Choco)
+```
+
+
+## Data Cleaning
+
+The objective of data cleaning in this project are:
+
+- Rename variable names if necessary
+- Observe and fix any misspelling or typos. 
+- Verify and transform data type. 
+- Observe for any missing values
+
+
+### Rename Columns
+
+There are two columns with a long name. Let's rename it and after that, confirm it by applying `head()`. 
+
+- Company...Maker.if.known. --> Company.Name
+- Specific.Bean.Origin.or.Bar.Name --> Region.Name
+
+```{r}
+names(Choco)[names(Choco) == "Company...Maker.if.known."] <- "Company.Name"
+names(Choco)[names(Choco) == "Specific.Bean.Origin.or.Bar.Name"] <- "Region.Bar"
+head(Choco)
+```
+
+
+### Misspelling and validity of data.
+
+#### Company.Location
+
+First, we observe company location values by using `unique()` and `sort()`. 
+
+
+```{r}
+sort(unique(Choco$Company.Location))
+```
+
+We found some of the values are not correct and also we spot some misspellings. 
+
+- Amsterdam is not a country and should be categorized as the Netherlands. 
+- Wales and Scotland are located in the U.K. 
+- Some misspellings: 
+  - Niacragua should be Nicaragua. 
+  - Domincan Republic should be the Dominican Republic.
+  - Eucador should be Ecuador.
+
+Let's make it better. Originally, the Company.location has 60 unique values, but now, it has 55 unique values.
+
+```{r}
+Choco$Company.Location[Choco$Company.Location ==  "Amsterdam"] <- "Netherlands"
+Choco$Company.Location[Choco$Company.Location ==  "Niacragua"] <- "Nicaragua"
+Choco$Company.Location[Choco$Company.Location ==  "Domincan Republic"] <- "Dominican Republic"
+Choco$Company.Location[Choco$Company.Location ==  "Eucador"] <- "Ecuador"
+Choco$Company.Location[Choco$Company.Location ==  "Wales" | Choco$Company.Location ==  "Scotland"] <- "U.K."
+sort(unique(Choco$Company.Location))
+```
+
+#### Broad.Bean.Origin
+
+Next, we check the Broad.Bean.Origin column by using `unique()` and `sort()`. 
+
+```{r}
+sort(unique(Choco$Broad.Bean.Origin))
+```
+
+We found that some of the names are not consistent and misspelling. Also, we need to delete some characters `/,(), &`. Let's clean it to make it more readable and consistent. 
+
+
+```{r}
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Ven., Indonesia, Ecuad."] <- "Venezuela, Indonesia, Ecuador"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Venezuela, Dom. Rep."] <- "Venezuela, Dominican Republic"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Venezuela/ Ghana"] <- "Venezuela, Ghana"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Ven., Trinidad, Mad."] <- "Venezuela, Trinidad, Madagascar"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Ven.,Ecu.,Peru,Nic."] <- "Venezuela, Ecuador, Nicaragua"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Peru, Dom. Rep"] <- "Peru, Dominican Republic"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Mad., Java, PNG"] <- "Madagascar, Java, PNG"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Dominican Rep., Bali"] <- "Dominican Republic, Bali"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Sao Tome & Principe"] <- "Sao Tome, Principe"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Africa, Carribean, C. Am."] <- "Africa, Carribean, Central America"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Trinidad-Tobago"] <- "Trinidad, Tobago"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "PNG, Vanuatu, Mad"] <- "PNG, Vanuatu, Madagascar"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Carribean(DR/Jam/Tri)"] <- "Carribean, Dominican Republic, Jamaica, Trinidad)"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Madagascar & Ecuador"] <- "Madagascar, Ecuador "
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Dom. Rep., Madagascar"] <- "Dominican Republic, Madagascar"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Domincan Republic"] <- "Dominican Republic"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Venez,Africa,Brasil,Peru,Mex"] <- "Venezuela,Africa,Brasil,Peru,Mexico"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Peru, Mad., Dom. Rep."] <- "Peru, Madagascar, Dominican Republic"
+
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Ghana, Domin. Rep"] <- "Ghana, Dominican Republic "
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Central and S. America"] <- "Central America, South America"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Ghana & Madagascar"] <- "Ghana, Madagascar"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Guat., D.R., Peru, Mad., PNG"] <- "Guatelama, Dominican Republic, Peru, Madagascar, PNG"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Gre., PNG, Haw., Haiti, Mad"] <- "Grenada, PNG, Hawaii, Haiti, Madagascar"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "DR, Ecuador, Peru"] <- "Dominican Republic, Ecuador, Peru"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Ecuador, Mad., PNG"] <- "Ecuador, Madagascar, PNG"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Cost Rica, Ven"] <- "Costa Rica, Venezuela "
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Ven, Bolivia, D.R."] <- "Venezuela, Bolivia, Dominican Republic"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Ven., Trinidad, Mad."] <- "Venezuela, Trinidad, Madagascar"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Peru(SMartin,Pangoa,nacional)"] <- "Peru, St. Martin, Pangoa, Nacional"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Peru, Dom. Rep"] <- "Peru, Dominican Republic"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "PNG, Vanuatu, Mad"] <- "PNG, Vanuatu, Madagascar"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  "Ven, Trinidad, Ecuador"] <- "Venezuela, Trinidad, Ecuador"
+Choco$Broad.Bean.Origin[Choco$Broad.Bean.Origin ==  ""] <- "Venezuela"
+
+head(sort(unique(Choco$Broad.Bean.Origin)),10)
+```
+
+#### Bean.Type
+
+Now, Observe the Bean.Type column by using `unique()` and `sort()`.
+
+```{r}
+sort(unique(Choco$Bean.Type))
+```
+
+As we can see above the bean type are categorized based on their main and sub-variety. According to this article by [Pohlan and Perez](https://www.eolss.net/sample-chapters/c10/E1-05A-43-00.pdf) and [bar and cocoa](https://barandcocoa.com/pages/varieties-of-cocoa-beans), the main varieties of the cacao plant are forastero, criollo, trinitario, and nacional. Let's categorized some of the values into their original variety. 
+
+
+```{r}
+Choco$Bean.Type[Choco$Bean.Type %in% c("Criollo (Ocumare 67)", "Criollo (Wild)", "Criollo (Ocumare 77)", "Criollo, +" , "Criollo (Amarru)", "Criollo (Ocumare)", "Criollo, Forastero", "Criollo (Ocumare 61)" , "Criollo (Porcelana)", "Criollo, Trinitario")] <- "Criollo"
+Choco$Bean.Type[Choco$Bean.Type %in% c("Forastero (Arriba) ASS", "Forastero (Parazinho)", "Forastero (Arriba) ASSS", "Forastero, Trinitario", "Forastero (Amelonado)", "Forastero (Arriba)", "Forastero (Catongo)", "Forastero (Nacional)", "Forastero(Arriba, CCN)", "Blend-Forastero,Criollo")] <- "Forastero"
+Choco$Bean.Type[Choco$Bean.Type %in% c("Trinitario (85% Criollo)", "Trinitario (Amelonado)", "Trinitario (Scavina)" , "Trinitario, Criollo", "Trinitario, Forastero","Trinitario, Nacional", "Trinitario, TCGA")] <- "Trinitario"
+Choco$Bean.Type[Choco$Bean.Type %in% c("Amazon mix", "Amazon, ICS")] <- "Amazon"
+Choco$Bean.Type[Choco$Bean.Type %in% c("Nacional (Arriba)")] <- "Nacional" 
+
+sort(unique(Choco$Bean.Type))
+
+```
+
+### Datatype Transformation
+
+Three columns should be transformed into an appropriate datatype. 
+
+  - Company...Maker.if.known., Company.Location, Broad.Bean.Origin are a character, it should be transformed into a factor. 
+  - Cocoa.Percent needs to change to numeric and delete the `%` character. 
+  - Review.Date needs to transform to Date. 
+
+Columns named Company.Name, Company.Location, Broad.Bean.Origin, Broad.Bean.Origin and Bean.Type is a character, it should be transformed to a factor. The transformed data type of multi-columns by using `lappy()` function.
+
+```{r}
+Choco[, c("Company.Name", "Region.Bar", "Company.Location", "Broad.Bean.Origin", "Bean.Type" )] <- lapply(Choco[, c("Company.Name", "Region.Bar", "Company.Location", "Broad.Bean.Origin", "Bean.Type" )], as.factor)
+```
+
+
+Column Cocoa.Percent is transformed from character to numeric. First, we apply `gsub()` function to remove `%` character and then change the data type by using `as.numeric`. Don't forget to confirm all the transformation data type by using `str()`
+
+```{r}
+# Transform Cocoa.Percent into Numeric type
+Choco$Cocoa.Percent <- gsub("%","",as.character(Choco$Cocoa.Percent))
+Choco$Cocoa.Percent <- as.numeric(Choco$Cocoa.Percent)
+
+# Transform Review.Date into Date type
+Choco$Review.Date <- as.Date(as.character(Choco$Review.Date), format="%Y")
+
+str(Choco)
+```
+
+### Drop Levels
+
+For data visualization proposes, we need to drop levels for columns Bread.Bean.Original, Bean.Type and Company.Location.
+
+```{r}
+Choco$Broad.Bean.Origin <- droplevels(Choco$Broad.Bean.Origin)
+Choco$Bean.Type <- droplevels(Choco$Bean.Type)
+Choco$Company.Location <- droplevels(Choco$Company.Location)
+```
+
+
+### Treatment Missing Values
+
+Check missing values for all columns by using `colSums()` and `is.na()`. We found no missing values in the data frame. 
+
+```{r}
+colSums(is.na(Choco))
+```
+Hmm.. it's interesting since there are some empty values such as in Bean.Type (888 rows) and Broad.Bean.Origin (73 rows), as you can see in the table below. Considering many empty values have been found in Bean.Type (almost 50%), we plan to keep the original data but not utilize it.
+
+
+```{r}
+head(as.data.frame(table(Choco$Bean.Type)))
+head(as.data.frame(table(Choco$Broad.Bean.Origin)))
+```
+
+
+## Data Manipulation, Wranggling and Visualization
+
+### Question No.1
+
+Check the frequency of bean origin (how many times it has been reviewed) and assign it as a variable called `Choco.bean`. 
+The table suggests that the bean from Venezuela, Ecuador, Dominican Republic, Peru and Madagascar has a high number of reviews.
+
+```{r}
+Choco.bean <- as.data.frame(table(Choco$Broad.Bean.Origin))
+colnames(Choco.bean) <- c("Broad.Bean.Origin", "Number.Reviews")
+Choco.bean <- Choco.bean[order(-Choco.bean$Number.Reviews),]
+head(Choco.bean)
+```
+
+
+Now, Observe a summary of the Frequency on data frame `Choco.bean`. 
+
+- The number of bean origin reviews ranges between 1 and 215. It implies that this data has a wide range value, with most of the data distributed at a low number of reviews (confirmed by a low median number). Let's confirm it by creating the histogram.
+- The histogram suggests that most of the bean origin has been reviewed between 0 and 20 times. 
+- My assumption: the data which has more reviews will accurately represent the population than the data with a lower number of reviews. In this case, I would use the data of bean origin which has been reviewed more than 30. Why do I choose this number? Based on [investopedia](https://www.investopedia.com/terms/c/central_limit_theorem.asp), the size of samples greater than 30 is often considered sufficient for the Central Limit Theorem (CLT) to hold, which can accurately predict the characteristics of a population.
+
+
+```{r}
+# Summary of number of reviews
+summary(Choco.bean$Number.Reviews)
+
+# histogram for number of reviews.
+hist(Choco.bean$Number.Reviews, 
+     xlab = "Number of Reviews", main = "Histogram of Number Reviews for Bean Origin")
+```
+
+
+Thus, Modify Choco.bean to filter the origin bean that has more than 30 reviews. We found that there are 17 rows and one of them is an empty value. 
+
+```{r}
+Choco.bean <- Choco.bean[Choco.bean$Number.Reviews> 30,]
+Choco.bean
+```
+
+Let's drop an empty values. 
+
+```{r}
+Choco.bean <- Choco.bean[-c(6),] 
+Choco.bean
+```
+
+
+Create the data frame called `Choco.bean.rating` containing origin bean that has reviewed more than 30 as listed in  `Choco.bean$Broad.Bean.Origin`. Change the data type of Broad.Bean.Origin into factor, and drop the levels. 
+
+```{r}
+Choco.bean.rating <- Choco[Choco$Broad.Bean.Origin %in% Choco.bean$Broad.Bean.Origin,]
+Choco.bean.rating$Broad.Bean.Origin <- as.factor(Choco.bean.rating$Broad.Bean.Origin)
+Choco.bean.rating$Broad.Bean.Origin <- droplevels(Choco.bean.rating$Broad.Bean.Origin)
+head(Choco.bean.rating)
+```
+
+
+Create the data frame containing mean, median, standard deviation and number of reviews from data frame `Choco.bean.rating` and assign it to a variable called `bean.rating.final`. 
+
+```{r}
+# Create variables each containing mean, median, standard deviation, number of reviews
+bean.rating.median <- aggregate(Rating ~ Broad.Bean.Origin, Choco.bean.rating, median)
+bean.rating.mean <- aggregate(Rating ~ Broad.Bean.Origin, Choco.bean.rating, mean)
+bean.rating.sd <- aggregate(Rating ~ Broad.Bean.Origin, Choco.bean.rating, sd)
+bean.rating.count <- aggregate(Rating ~ Broad.Bean.Origin, Choco.bean.rating, length)
+
+# Merge four variable into dataframe called bean.rating.final. 
+MyMerge <- function(x, y){
+  df <- merge(x, y, by= "Broad.Bean.Origin", all.x= TRUE, all.y= TRUE)
+  return(df)
+}
+
+bean.rating.final <- Reduce(MyMerge, list(bean.rating.mean, bean.rating.median, bean.rating.sd,bean.rating.count ))
+
+# Rename columns and order the column by median and standard deviation. 
+colnames(bean.rating.final) <- c('Origin.Bean.Type','Mean','Median','St.Dev', 'Number.Reviews')
+bean.rating.final <- bean.rating.final[order(-bean.rating.final[,3], bean.rating.final[,4]), ]
+bean.rating.final
+```
+
+For visualization : Construct the boxplot containing the bean origin and its rating. Then, pull out the outliers.
+
+```{r}
+# Creating boxplot of beans origin and its rating. 
+boxplot.bean<- plot(y=Choco.bean.rating$Rating, x=Choco.bean.rating$Broad.Bean.Origin,
+        xlab = "origin Bean", ylab = "Rating",
+        col = c("red", "yellow", "blue", "brown", "orange", "green", "violet", "light yellow", "pink", "light green", "white",  "purple", "grey", "dark blue", "red","dark green"),
+        main = "Boxplot Origin Bean to Rating")
+
+# Pull out all outliers
+out.bean <- Choco.bean.rating[Choco.bean.rating$Rating %in% boxplot.bean$out, c("Company.Name", "Cocoa.Percent", "Rating", "Broad.Bean.Origin")]
+head(out.bean[order(-out.bean$Rating),])
+```
+
+
+> Insight:
+> 
+- The median will be used to measure rating central tendency because the value of median is not depended with outliers.
+- Based on `bean.rating.final` data frame, there are two countries (Vietnam and Brazil) that have similar values of the median at 3.375. However, the standard deviation of Vietnam is lower than Brazil, meaning the data distributed closer to the median value. Thus, Vietnam is the best area that produces cocoa beans with the highest median rating, followed by Brazil, Belize, Nicaragua, and the Dominican Republic. 
+- Most of the bean origins are located in the South American regions. 
+- Based on the boxplot, the cocoa farms located in those regions produce the cocoa beans with a rating between 3 and 3.75, which can be categorized as "Satisfactory" to "Praiseworthy". 
+- There are outliers, which mostly has a low rating between 1 and 2. However, there is only one outlier with a perfect score of 5. It is cocoa beans produced from Venezuela.  
+
+
+### Question No.2
+
+We will treat question No.2 similar to the first question. First, filter data frame for only company location that has been reviewed more than 30 times and assign it to an object called  `Choco.com`. 
+
+
+```{r}
+# Create data frame called Choco.comp to find a frequency of review's number based on company location. 
+Choco.comp <- as.data.frame(table(Choco$Company.Location))
+colnames(Choco.comp) <- c("Company.Location", "Number.Review")
+
+# Filter the Choco.comp so that the data frame has number of review > 30, assign it as variable called Choco.comp.
+Choco.com <- Choco.comp[Choco.comp$Number.Review > 30, ]
+Choco.com <- Choco.com[order(-Choco.com$Number.Review),]
+Choco.com
+```
+
+Ten company locations have more than 30 reviews. It is interesting to note that the United States has a significant number of reviews. It's because of the high number of chocolate companies in the US or the repeated reviews of similar companies over the years when the total number of chocolate companies is relatively small. In other words, we want to know the correlation between the number of reviews and the number of companies for each country.
+
+To answer the above question, let's first look up the frequency table of company name and company location, set as a data frame called `company`. This data frame shows a list of companies and their locations and the number of reviews. The number of reviews 0 means the company is not located here. Now, drop the data with the number of reviews = 0.
+
+```{r}
+company <- as.data.frame(table(Choco$Company.Name, Choco$Company.Location))
+colnames(company) <- c("Company.Name", "Company.Location", "Number.Reviews")
+company <- company[company$Number.Reviews != 0, ]
+head(company)
+```
+
+From `company` data frame, create table frequency of company location and assign it as data frame called `country`. This data frame describes the number of the company in each country. To make it better, merge the `country` and `Choco.comp` data frames so that we can observe the number of reviews and the number of the company for each country. Assign the result as a data frame called `com.mer`. Construct a scatter plot to give a visualization of the correlation.
+
+
+```{r}
+country <- as.data.frame(table(company$Company.Location))
+colnames(country) <- c("Company.Location", "Number.Companies")
+
+com.mer <- merge(Choco.comp, country, by="Company.Location")
+head(com.mer[order(-com.mer$Number.Companies),])
+
+# Create a scatter plot 
+plot(x=com.mer$Number.Review, y=com.mer$Number.Companies,
+     xlab = "Number of Review", ylab = "Number of Companies",
+     main = "Scatterplot Number of Review and Number of Company",
+     pitch= 9)
+
+abline(lm(formula = Number.Companies~Number.Review,
+       data=com.mer),
+       col=10, 
+       lwd=2, 
+       lty=3)
+```
+
+>Insight :
+>Based on the scatter plot and `com.mer` frame data, The U.S.A has the largest number of chocolate factories, which accounted for around 42% of total samples. Since there is a high correlation between the number of reviews and the number of companies in each country, it implies that the total number of reviews from the United States-based companies is significantly high. Even though, the United States has the highest number of reviews and chocolate bars companies. Does it mean that their chocolate bars also have a high rating?? To find the answer, let's move on!
+
+
+Now, create a data frame called `Choco.com.rating` containing a list of company locations as in `Choco.com$Company.Location`.
+
+```{r}
+Choco.com.rating <- Choco[Choco$Company.Location %in% Choco.com$Company.Location,]
+Choco.com.rating$Company.Location <- droplevels(Choco.com.rating$Company.Location)
+head(Choco.com.rating)
+```
+
+Create the data frame containing median, standard deviation and a number of reviews from data frame `Choco.com.rating` and assign it to a variable called `com.final`. 
+
+```{r}
+# Create variable each containing median, standard deviation, frequency for rating
+com.median <- aggregate(Rating ~ Company.Location, Choco.com.rating, median)
+com.sd <- aggregate(Rating ~ Company.Location, Choco.com.rating, sd)
+com.count <- aggregate(Rating ~ Company.Location, Choco.com.rating, length)
+
+# Merge four variable into dataframe. 
+MyMerge <- function(x, y){
+  df <- merge(x, y, by= "Company.Location", all.x= TRUE, all.y= TRUE)
+  return(df)
+}
+com.final <- Reduce(MyMerge, list(com.median, com.sd, com.count ))
+
+# Rename columns and order the column median and standard deviation
+colnames(com.final) <- c('Company.Location','Median','St.Dev', 'Number.Reviews')
+com.final[order(-com.final[,2], com.final[,3]), ]
+
+```
+
+Create a new column called `rating_int` from data frame `Choco.com.rating` and construct a mosaic plot to visualize rating interval and company location. The area of ​​each rectangle represents the proportion of that variable in each group.
+
+```{r}
+# Create a function to classify the rating. 
+convert_int <- function(y){ 
+    if(y <= 2){
+      y <- "0 - 2" 
+    }else 
+      if(y > 2 & y < 3){
+      y <- "2 - 3" 
+    }else 
+      if(y > 3 & y < 4){
+      y <- "3 - 4" 
+    }else{
+      y <- "4 - 5" 
+    }  
+}
+
+# Create a new column called rating_int and construct a mosaic plot. 
+Choco.com.rating$rating_int <- sapply(X = Choco.com.rating$Rating, FUN = convert_int) 
+Choco.com.rating$rating_int  <- as.factor(Choco.com.rating$rating_int)
+plot(xtabs(~ Company.Location + rating_int, Choco.com.rating),
+        col = c("green", "orange", "red", "light blue"),
+        xlab = "Company Location", ylab = "Interval Rating",
+        legend.text=colnames(Choco.com$rating_int),
+        main = "Mosaic plot for Company Location and Interval of Rating")
+
+```
+
+
+> Insights:
+>
+- Based on the mosaic plot, the United States has the largest proportion of the number of reviews, confirmed by the largest rectangular area.
+- The largest proportion of interval ratings for each country is between 3 and 4, as opposed to interval ratings between 0 and 2.
+- Based on the `com.final` data frame, the median rating for 10 company locations is relatively close to the range between 3 to 3.5.
+- Australia is the country that produces chocolate bars with the highest median rating, followed by Canada, USA, Switzerland and Germany.
+
+### Question No.3
+
+Check the correlation value by applying `cor()` and construct a scatter plot to observe the correlation between rating and percentage of cocoa. 
+
+
+```{r}
+# Check correlation
+cor(Choco$Cocoa.Percent, Choco$Rating)
+
+# Create a scatter plot
+plot(x=Choco$Cocoa.Percent, y=Choco$Rating,
+     xlab = "Percentage of Cocoa", ylab = "Rating",
+     main = "Scatterplot Cocoa's Percentage and Rating",
+     pitch= 9)
+
+abline(lm(formula = Rating ~ Cocoa.Percent,
+       data=Choco),
+       col=10, 
+       lwd=2, 
+       lty=3)
+
+```
+
+
+The scatter plot describes that there is a weak negative or almost no correlation between cocoa percentage and rating. Furthermore, we could explore much more detail of this correlation by creating the boxplot between an interval of cocoa percentage and its rating.
+
+
+```{r}
+# Create a function convert_coc (interval of cocoa's percentage)
+convert_coc <- function(y){ 
+    if(y <= 50){
+      y <- "0-50" 
+    }else 
+      if(y > 50 & y <= 60){
+      y <- "50-60" 
+    }else 
+      if(y > 60 & y <= 70){
+      y <- "60-70" 
+    }else 
+      if(y > 70 & y <= 80){
+      y <- "70-80" 
+    }else 
+      if(y > 80 & y <= 90){
+      y <- "80-90" 
+    }else{
+      y <- "90 to 100" 
+    }  
+}
+
+# Assign the function to a variable called cocoa_int 
+Choco$cocoa_int <- sapply(X = Choco$Cocoa.Percent, FUN = convert_coc) 
+Choco$cocoa_int <- as.factor(Choco$cocoa_int)
+
+# Create a boxplot
+plot(x=Choco$cocoa_int,
+     y=Choco$Rating,
+     xlab = "Cocoa Percentage Interval", ylab = "Rating",
+     col = c("red", "yellow", "blue", "brown", "orange", "green", "violet"),
+     main = "Boxplot Percentage of Cocoa to Rating")
+```
+
+
+> Insight :
+>
+- There is a weak negative correlation between the rating and the cocoa percentage, which is confirmed by the value of correlation. 
+- Based on the scatter plot, the cocoa's content is concentrated between 60 and 80%, with a rating between 2.5 and 4.
+- Refer to boxplot, the chocolate bars with 60-70% and 70-80% cocoa have the highest median rating at approximately 3.25. 
+- The highest interval of cocoa content (90-100%) has the lowest median rating at 2. It has also a wide distribution.
+- The box plot shows an increasing trend of rating from low cocoa percentage until 60-80% cocoa content, then the rating's trend decreases for higher cocoa's percentage. 
+- Outliers mostly fall at low ratings. 
+
+
+
+## Conclusion 
+
+
+**Where are cocoa beans with the highest average rating grown?**
+
+Cocoa beans with the highest average rating are harvested in Vietnam, followed by Brazil, Belize, Nicaragua, and the Dominican Republic. Based on [legecy chocolate](https://legacychocolates.com/about-us/blog/articleid/41/do-cocoa-beans-grow-in-the-usa),
+cocoa beans are mostly grown in tropic regions. Cocoa beans require constant warm temperatures between 65 and 90 degrees Fahrenheit to survive, with annual rainfall around 40-100 inches.
+
+
+**Discover which countries manufacture chocolate bars with the highest average rating?**
+
+The U.S.A has the largest number of chocolate production, which accounted for around 42% of total samples. Australia and Canada are considered as countries that manufactures chocolate bars with the highest median rating value at 3.5.
+
+
+**How is the relationship between a chocolate bar's percentage and its rating?**
+
+There is a weak negative correlation between rating and cocoa percentage. Chocolate bars with a cocoa percentage between 60 and 80% appear to have the highest median rating, as opposed to chocolate bars with a cocoa content between 90 and 100%. 
+
+
+## References
+
+1. [Bar and Cocoa](https://barandcocoa.com/pages/varieties-of-cocoa-beans)
+2. [History](https://www.history.com/news/the-sweet-history-of-chocolate)
+3. [Legecy Chocolate](https://legacychocolates.com/about-us/blog/articleid/41/do-cocoa-beans-grow-in-the-usa)
+4. [Pohlan and Perez](https://www.eolss.net/sample-chapters/c10/E1-05A-43-00.pdf)
+5. [The Kaggle](https://www.kaggle.com/rtatman/chocolate-bar-ratings)
+
+
+
+
+
+
